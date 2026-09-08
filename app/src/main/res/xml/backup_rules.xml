@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<full-backup-content>
+    <include domain="database" path="." />
+    <include domain="sharedpref" path="." />
+    <exclude domain="sharedpref" path="nova_secure_prefs.xml" />
+    <exclude domain="database" path="nova_database-wal" />
+</full-backup-content>
