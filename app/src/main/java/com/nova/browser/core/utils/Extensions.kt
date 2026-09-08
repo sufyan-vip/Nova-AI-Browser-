@@ -1,6 +1,7 @@
 package com.nova.browser.core.utils
 
 import android.content.ClipData
+import android.content.ClipDescription
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
@@ -12,10 +13,24 @@ import java.util.Locale
 
 /* ---------------- Context ---------------- */
 
-fun Context.copyToClipboard(text: String, label: String = "NOVA") {
+/**
+ * Copies [text] to the clipboard. When [sensitive] is true the clip is flagged
+ * so Android 13+ hides the preview and excludes it from clipboard history.
+ */
+fun Context.copyToClipboard(text: String, label: String = "NOVA", sensitive: Boolean = false) {
     val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager ?: return
     try {
-        clipboard.setPrimaryClip(ClipData.newPlainText(label, text))
+        val clip = ClipData.newPlainText(label, text)
+        if (sensitive) {
+            clip.description.extras = android.os.PersistableBundle().apply {
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                    putBoolean(ClipDescription.EXTRA_IS_SENSITIVE, true)
+                } else {
+                    putBoolean("android.content.extra.IS_SENSITIVE", true)
+                }
+            }
+        }
+        clipboard.setPrimaryClip(clip)
     } catch (e: Exception) {
         // Clipboard unavailable (e.g. device policy) — silently ignore.
     }
