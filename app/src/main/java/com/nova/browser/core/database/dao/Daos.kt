@@ -137,8 +137,8 @@ interface TabDao {
     @Query("SELECT * FROM tabs ORDER BY position ASC, createdAt ASC")
     fun observeAll(): Flow<List<TabEntity>>
 
-    @Query("SELECT * FROM tabs WHERE isPrivate = :private ORDER BY position ASC")
-    fun observeByPrivacy(private: Boolean): Flow<List<TabEntity>>
+    @Query("SELECT * FROM tabs WHERE isPrivate = :isPrivate ORDER BY position ASC")
+    fun observeByPrivacy(isPrivate: Boolean): Flow<List<TabEntity>>
 
     @Query("SELECT * FROM tabs ORDER BY position ASC, createdAt ASC")
     suspend fun getAll(): List<TabEntity>

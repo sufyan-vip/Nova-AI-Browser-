@@ -31,8 +31,9 @@ class ActionExecutor @Inject constructor(
 
     data class Outcome(val success: Boolean, val message: String, val data: String? = null)
 
-    suspend fun execute(action: AgentAction, bridge: BrowserBridge): Outcome = try {
-        when (action.type) {
+    suspend fun execute(action: AgentAction, bridge: BrowserBridge): Outcome {
+        return try {
+            when (action.type) {
             AgentActionType.NAVIGATE -> {
                 val url = UrlUtils.toUrlOrSearch(action.target ?: action.value.orEmpty())
                 if (url.isBlank()) {
@@ -233,6 +234,7 @@ class ActionExecutor @Inject constructor(
             AgentActionType.FINISH -> Outcome(true, action.value ?: action.reason ?: "Done")
         }
     } catch (e: Exception) {
-        Outcome(false, e.message ?: "The step failed unexpectedly")
+            Outcome(false, e.message ?: "The step failed unexpectedly")
+        }
     }
 }
