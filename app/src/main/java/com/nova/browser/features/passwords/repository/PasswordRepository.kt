@@ -209,7 +209,11 @@ class PasswordRepository @Inject constructor(
         )
         if (common.any { lower.contains(it) }) score -= 40
         if (Regex("^\\d+$").matches(password)) score -= 20
-        if (password.length < 8) score -= 20
+        if (password.length < 8) {
+            // Complexity cannot compensate for an unsafe length. Capping the
+            // score also keeps the user-facing label consistent with isWeak.
+            score = min(score - 20, 39)
+        }
 
         val clamped = score.coerceIn(0, 100)
         val label = when {
