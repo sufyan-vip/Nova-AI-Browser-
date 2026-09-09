@@ -29,7 +29,6 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -403,7 +402,7 @@ class AgentViewModel @Inject constructor(
                     AutomationEntity(
                         name = name.ifBlank { run.goal.take(60) },
                         description = description.ifBlank { run.summary },
-                        steps = com.google.gson.Gson().toJson(run.steps.map { it.action }),
+                        workflowJson = com.google.gson.Gson().toJson(run.steps.map { it.action }),
                         triggerType = "manual",
                         isEnabled = true
                     )
@@ -416,7 +415,7 @@ class AgentViewModel @Inject constructor(
 
     fun runWorkflow(automation: AutomationEntity) {
         val actions = runCatching {
-            com.google.gson.Gson().fromJson(automation.steps, Array<AgentAction>::class.java)?.toList()
+            com.google.gson.Gson().fromJson(automation.workflowJson, Array<AgentAction>::class.java)?.toList()
         }.getOrNull().orEmpty()
 
         if (actions.isEmpty()) {
@@ -441,6 +440,21 @@ class AgentViewModel @Inject constructor(
             )
             runCatching { automationDao.recordRun(automation.id, System.currentTimeMillis(), "ok") }
             if (model != null) executeAll(model) else finish("Ran without AI recovery.", emptyList())
+        }
+    }
+
+    /** Looks a saved workflow up by id and runs it (used by the automation studio). */
+    fun runWorkflowById(id: Long) {
+        viewModelScope.launch {
+            val automation = runCatching { automationDao.getById(id) }.getOrNull()
+            if (automation == null) {
+                _uiState.value = _uiState.value.copy(
+                    visible = true,
+                    error = "That automation no longer exists."
+                )
+                return@launch
+            }
+            runWorkflow(automation)
         }
     }
 

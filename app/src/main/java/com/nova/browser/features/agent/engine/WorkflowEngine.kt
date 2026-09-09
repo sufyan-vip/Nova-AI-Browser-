@@ -2,7 +2,6 @@ package com.nova.browser.features.agent.engine
 
 import com.google.gson.Gson
 import com.google.gson.JsonSyntaxException
-import com.nova.browser.features.ai.engine.AIMessage
 import com.nova.browser.features.ai.engine.AIMode
 import com.nova.browser.features.ai.engine.AIModel
 import com.nova.browser.features.ai.repository.AIRepository
@@ -133,43 +132,53 @@ class WorkflowEngine @Inject constructor(
     }
 
     /** Tolerates fenced code blocks and surrounding prose. */
-    internal fun parsePlan(raw: String, fallbackGoal: String): AgentPlan? {
-        val json = extractJson(raw) ?: return null
-        return try {
-            val plan = gson.fromJson(json, AgentPlan::class.java) ?: return null
-            val steps = plan.steps.filter { it.action.isNotBlank() }
-            if (steps.isEmpty()) null
-            else plan.copy(goal = plan.goal.ifBlank { fallbackGoal }, steps = steps)
-        } catch (e: JsonSyntaxException) {
-            null
-        } catch (e: Exception) {
-            null
-        }
-    }
+    internal fun parsePlan(raw: String, fallbackGoal: String): AgentPlan? =
+        parsePlan(raw, fallbackGoal, gson)
 
-    private fun extractJson(raw: String): String? {
-        val text = raw.trim()
-        val fenced = Regex("```(?:json)?\\s*([\\s\\S]*?)```").find(text)?.groupValues?.get(1)?.trim()
-        val candidate = fenced ?: text
-        val start = candidate.indexOf('{')
-        if (start < 0) return null
-        var depth = 0
-        var inString = false
-        var escaped = false
-        for (index in start until candidate.length) {
-            val char = candidate[index]
-            when {
-                escaped -> escaped = false
-                char == '\\' && inString -> escaped = true
-                char == '"' -> inString = !inString
-                inString -> Unit
-                char == '{' -> depth++
-                char == '}' -> {
-                    depth--
-                    if (depth == 0) return candidate.substring(start, index + 1)
-                }
+    companion object {
+        /**
+         * Pure plan parsing, kept free of injected collaborators so it can be
+         * exercised directly. Never throws: unusable output returns null.
+         */
+        fun parsePlan(raw: String, fallbackGoal: String, gson: Gson): AgentPlan? {
+            val json = extractJson(raw) ?: return null
+            return try {
+                val plan = gson.fromJson(json, AgentPlan::class.java) ?: return null
+                val steps = plan.steps.filter { it.action.isNotBlank() }
+                if (steps.isEmpty()) null
+                else plan.copy(goal = plan.goal.ifBlank { fallbackGoal }, steps = steps)
+            } catch (e: JsonSyntaxException) {
+                null
+            } catch (e: Exception) {
+                null
             }
         }
-        return null
+
+        /** Finds the first balanced JSON object, ignoring fences and prose. */
+        fun extractJson(raw: String): String? {
+            val text = raw.trim()
+            val fenced = Regex("```(?:json)?\\s*([\\s\\S]*?)```").find(text)?.groupValues?.get(1)?.trim()
+            val candidate = fenced ?: text
+            val start = candidate.indexOf('{')
+            if (start < 0) return null
+            var depth = 0
+            var inString = false
+            var escaped = false
+            for (index in start until candidate.length) {
+                val char = candidate[index]
+                when {
+                    escaped -> escaped = false
+                    char == '\\' && inString -> escaped = true
+                    char == '"' -> inString = !inString
+                    inString -> Unit
+                    char == '{' -> depth++
+                    char == '}' -> {
+                        depth--
+                        if (depth == 0) return candidate.substring(start, index + 1)
+                    }
+                }
+            }
+            return null
+        }
     }
 }

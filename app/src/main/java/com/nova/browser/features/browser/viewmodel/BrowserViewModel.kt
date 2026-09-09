@@ -479,6 +479,48 @@ class BrowserViewModel @Inject constructor(
         )
     }
 
+    /**
+     * DevTools needs the live WebView, so it is shown as an overlay on the
+     * browser surface rather than as its own destination. Other screens raise
+     * this flag and pop back to the browser.
+     */
+    private val _devToolsRequested = MutableStateFlow(false)
+    val devToolsRequested: StateFlow<Boolean> = _devToolsRequested.asStateFlow()
+
+    private val _agentRequested = MutableStateFlow(false)
+    val agentRequested: StateFlow<Boolean> = _agentRequested.asStateFlow()
+
+    fun requestAgent() {
+        _agentRequested.value = true
+    }
+
+    fun consumeAgentRequest() {
+        _agentRequested.value = false
+    }
+
+    fun requestDevTools() {
+        _devToolsRequested.value = true
+    }
+
+    fun consumeDevToolsRequest() {
+        _devToolsRequested.value = false
+    }
+
+    /**
+     * Automations run against the live page, so the studio hands the id back to
+     * the browser surface, where the agent is bound to the WebView.
+     */
+    private val _pendingAutomationId = MutableStateFlow<Long?>(null)
+    val pendingAutomationId: StateFlow<Long?> = _pendingAutomationId.asStateFlow()
+
+    fun requestAutomation(id: Long) {
+        _pendingAutomationId.value = id
+    }
+
+    fun consumeAutomationRequest() {
+        _pendingAutomationId.value = null
+    }
+
     fun snackbar(message: String) = emit(BrowserCommand.Snackbar(message))
 
     fun runScript(script: String, tag: String) = emit(BrowserCommand.RunJs(script, tag))

@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -29,6 +28,7 @@ import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.filled.Tab
 import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material.icons.filled.Workspaces
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -96,6 +96,11 @@ fun TabManagerScreen(
                     )
                 },
                 actions = {
+                    GlassIconButton(
+                        icon = Icons.Default.Workspaces,
+                        contentDescription = "Workspaces",
+                        onClick = { onNavigate(Routes.WORKSPACES) }
+                    )
                     GlassIconButton(
                         icon = Icons.Default.VisibilityOff,
                         contentDescription = "New private tab",

@@ -9,11 +9,6 @@ import android.view.ViewGroup
 import android.webkit.WebChromeClient
 import android.webkit.WebView
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -25,7 +20,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -43,7 +37,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nova.browser.core.theme.Dimens
 import com.nova.browser.core.utils.Constants
-import com.nova.browser.core.utils.UrlUtils
 import com.nova.browser.features.agent.engine.ActionExecutor
 import com.nova.browser.features.agent.ui.AgentPanel
 import com.nova.browser.features.agent.viewmodel.AgentViewModel
@@ -53,9 +46,9 @@ import com.nova.browser.features.ai.viewmodel.AIViewModel
 import com.nova.browser.features.browser.viewmodel.BrowserCommand
 import com.nova.browser.features.browser.viewmodel.BrowserViewModel
 import com.nova.browser.features.media.ScreenshotCapture
+import com.nova.browser.features.devtools.ui.DevToolsScreen
 import com.nova.browser.features.devtools.viewmodel.DevToolsViewModel
 import com.nova.browser.features.downloads.viewmodel.DownloadsViewModel
-import com.nova.browser.features.privacy.engine.TrackerBlocker
 import com.nova.browser.navigation.Routes
 import kotlinx.coroutines.launch
 
@@ -74,6 +67,10 @@ fun BrowserScreen(
     downloadsViewModel: DownloadsViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val devToolsState by devToolsViewModel.uiState.collectAsStateWithLifecycle()
+    val devToolsRequested by viewModel.devToolsRequested.collectAsStateWithLifecycle()
+    val pendingAutomationId by viewModel.pendingAutomationId.collectAsStateWithLifecycle()
+    val agentRequested by viewModel.agentRequested.collectAsStateWithLifecycle()
     val trackerBlocker = viewModel.trackerBlocker
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -85,6 +82,31 @@ fun BrowserScreen(
     var fullscreenView by remember { mutableStateOf<View?>(null) }
     var fullscreenCallback by remember { mutableStateOf<WebChromeClient.CustomViewCallback?>(null) }
     var webViewRef by remember { mutableStateOf<WebView?>(null) }
+
+    // Other screens can ask for DevTools; honour the request once we're back here.
+    LaunchedEffect(devToolsRequested) {
+        if (devToolsRequested) {
+            devToolsViewModel.show()
+            viewModel.consumeDevToolsRequest()
+        }
+    }
+
+    // Deep links and other screens can ask for the agent panel.
+    LaunchedEffect(agentRequested) {
+        if (agentRequested) {
+            agentViewModel.show()
+            viewModel.consumeAgentRequest()
+        }
+    }
+
+    // The automation studio asks the agent (bound here) to run a saved workflow.
+    LaunchedEffect(pendingAutomationId, webViewRef) {
+        val id = pendingAutomationId
+        if (id != null && webViewRef != null) {
+            agentViewModel.runWorkflowById(id)
+            viewModel.consumeAutomationRequest()
+        }
+    }
 
     /* --------------------------- agent wiring --------------------------- */
 
@@ -160,6 +182,7 @@ fun BrowserScreen(
     BackHandler(enabled = true) {
         when {
             fullscreenView != null -> fullscreenCallback?.onCustomViewHidden()
+            devToolsState.visible -> devToolsViewModel.hide()
             aiViewModel.uiState.value.visible -> aiViewModel.hide()
             agentViewModel.uiState.value.visible -> agentViewModel.hide()
             state.findInPageVisible -> viewModel.hideFindInPage()
@@ -308,6 +331,15 @@ fun BrowserScreen(
             )
 
             AgentPanel(viewModel = agentViewModel)
+
+            if (devToolsState.visible) {
+                DevToolsScreen(
+                    browserViewModel = viewModel,
+                    onBack = devToolsViewModel::hide,
+                    viewModel = devToolsViewModel,
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
         }
     }
 
@@ -322,6 +354,7 @@ fun BrowserScreen(
                     viewModel = viewModel,
                     aiViewModel = aiViewModel,
                     agentViewModel = agentViewModel,
+                    devToolsViewModel = devToolsViewModel,
                     onNavigate = onNavigate
                 )
             }
@@ -341,6 +374,7 @@ private fun handleMenuAction(
     viewModel: BrowserViewModel,
     aiViewModel: AIViewModel,
     agentViewModel: AgentViewModel,
+    devToolsViewModel: DevToolsViewModel,
     onNavigate: (String) -> Unit
 ) {
     when (action) {
@@ -368,7 +402,7 @@ private fun handleMenuAction(
             aiViewModel.summarizePage()
         }
         MenuAction.Agent -> agentViewModel.show()
-        MenuAction.DevTools -> onNavigate(Routes.DEVTOOLS)
+        MenuAction.DevTools -> devToolsViewModel.show()
         MenuAction.CodeWorkspace -> onNavigate(Routes.CODE)
         MenuAction.Automation -> onNavigate(Routes.AUTOMATION)
         MenuAction.Passwords -> onNavigate(Routes.PASSWORDS)

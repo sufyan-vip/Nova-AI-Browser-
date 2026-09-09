@@ -8,6 +8,7 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -15,13 +16,11 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.nova.browser.core.theme.NovaMotion
-import com.nova.browser.features.agent.ui.AgentScreen
 import com.nova.browser.features.automation.ui.AutomationStudioScreen
 import com.nova.browser.features.bookmarks.ui.BookmarksScreen
 import com.nova.browser.features.browser.ui.BrowserScreen
 import com.nova.browser.features.browser.viewmodel.BrowserViewModel
 import com.nova.browser.features.codeworkspace.ui.CodeWorkspaceScreen
-import com.nova.browser.features.devtools.ui.DevToolsScreen
 import com.nova.browser.features.downloads.ui.DownloadsScreen
 import com.nova.browser.features.history.ui.HistoryScreen
 import com.nova.browser.features.memory.ui.AIMemoryScreen
@@ -148,11 +147,13 @@ fun NovaNavGraph(
             PasswordManagerScreen(onBack = { navController.popBackStack() })
         }
 
+        // DevTools needs the live WebView, so it opens as an overlay on the
+        // browser surface; this route simply raises the flag and returns there.
         composable(Routes.DEVTOOLS) {
-            DevToolsScreen(
-                browserViewModel = browserViewModel,
-                onBack = { navController.popBackStack() }
-            )
+            LaunchedEffect(Unit) {
+                browserViewModel.requestDevTools()
+                navController.popBackStack(Routes.BROWSER, inclusive = false)
+            }
         }
 
         composable(Routes.CODE) {
@@ -160,7 +161,13 @@ fun NovaNavGraph(
         }
 
         composable(Routes.AUTOMATION) {
-            AutomationStudioScreen(onBack = { navController.popBackStack() })
+            AutomationStudioScreen(
+                onBack = { navController.popBackStack() },
+                onRun = { id ->
+                    browserViewModel.requestAutomation(id)
+                    navController.popBackStack(Routes.BROWSER, inclusive = false)
+                }
+            )
         }
 
         composable(Routes.MEMORY) {
@@ -178,14 +185,21 @@ fun NovaNavGraph(
         }
 
         composable(Routes.WORKSPACES) {
-            WorkspacesScreen(onBack = { navController.popBackStack() })
+            WorkspacesScreen(
+                onBack = { navController.popBackStack() },
+                onOpenBrowser = {
+                    navController.popBackStack(Routes.BROWSER, inclusive = false)
+                }
+            )
         }
 
+        // The agent drives the live WebView, so it appears as a panel on the
+        // browser surface; this route just raises the request and returns there.
         composable(Routes.AGENT) {
-            AgentScreen(
-                browserViewModel = browserViewModel,
-                onBack = { navController.popBackStack() }
-            )
+            LaunchedEffect(Unit) {
+                browserViewModel.requestAgent()
+                navController.popBackStack(Routes.BROWSER, inclusive = false)
+            }
         }
 
         composable(

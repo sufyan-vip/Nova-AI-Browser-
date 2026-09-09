@@ -55,7 +55,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -76,7 +75,6 @@ import com.nova.browser.core.theme.SectionHeader
 import com.nova.browser.core.utils.copyToClipboard
 import com.nova.browser.core.utils.toast
 import com.nova.browser.features.agent.engine.AgentStep
-import com.nova.browser.features.agent.engine.SafetyChecker
 import com.nova.browser.features.agent.engine.StepStatus
 import com.nova.browser.features.agent.viewmodel.AgentViewModel
 

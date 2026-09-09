@@ -818,4 +818,24 @@ object JsScripts {
   }
 })();
 """
+
+    /**
+     * Wraps a user-entered console expression so the result comes back as a
+     * readable string and thrown errors are reported instead of lost.
+     */
+    fun consoleEval(expression: String): String = """
+(function() {
+  try {
+    var __nova_result = eval('${HtmlUtils.escapeJsString(expression)}');
+    if (__nova_result === undefined) return 'undefined';
+    if (__nova_result === null) return 'null';
+    if (typeof __nova_result === 'object') {
+      try { return JSON.stringify(__nova_result); } catch (e) { return String(__nova_result); }
+    }
+    return String(__nova_result);
+  } catch (e) {
+    return 'Error: ' + String(e);
+  }
+})();
+"""
 }

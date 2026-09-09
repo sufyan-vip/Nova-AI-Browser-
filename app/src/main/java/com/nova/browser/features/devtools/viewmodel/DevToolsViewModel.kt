@@ -2,8 +2,10 @@ package com.nova.browser.features.devtools.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.nova.browser.features.agent.engine.PageInteractor
 import com.nova.browser.features.ai.engine.AIMode
 import com.nova.browser.features.ai.repository.AIRepository
+import com.nova.browser.features.browser.web.JsScripts
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -39,6 +41,7 @@ data class NetworkEntry(
 }
 
 data class DevToolsUiState(
+    val visible: Boolean = false,
     val selectedTab: Int = 0,
     val console: List<ConsoleEntry> = emptyList(),
     val network: List<NetworkEntry> = emptyList(),
@@ -73,7 +76,8 @@ data class DevToolsUiState(
  */
 @HiltViewModel
 class DevToolsViewModel @Inject constructor(
-    private val aiRepository: AIRepository
+    private val aiRepository: AIRepository,
+    private val pageInteractor: PageInteractor
 ) : ViewModel() {
 
     private companion object {
@@ -97,6 +101,14 @@ class DevToolsViewModel @Inject constructor(
         _uiState.value = _uiState.value.copy(
             network = (_uiState.value.network + entry).takeLast(MAX_NETWORK)
         )
+    }
+
+    fun show() {
+        _uiState.value = _uiState.value.copy(visible = true, error = null)
+    }
+
+    fun hide() {
+        _uiState.value = _uiState.value.copy(visible = false)
     }
 
     fun selectTab(index: Int) {
@@ -159,6 +171,63 @@ class DevToolsViewModel @Inject constructor(
 
     fun setJsOutput(value: String) {
         _uiState.value = _uiState.value.copy(jsOutput = value)
+    }
+
+    /* --------------------------- live page reads --------------------------- */
+
+    /** Loads the panel data for [index] from the live page. */
+    fun refreshTab(index: Int) {
+        when (index) {
+            2 -> refreshDom()
+            3 -> refreshStorage()
+            4 -> refreshSource()
+            5 -> refreshPerformance()
+            6 -> refreshAccessibility()
+            else -> Unit
+        }
+    }
+
+    fun refreshDom() = load(JsScripts.GET_DOM_TREE) { setDomTree(it) }
+
+    fun refreshStorage() = load(JsScripts.GET_STORAGE) { setStorage(it) }
+
+    fun refreshSource() = load(JsScripts.GET_SOURCE) { setSource(it) }
+
+    fun refreshPerformance() = load(JsScripts.GET_PERFORMANCE) { setPerformance(it) }
+
+    fun refreshAccessibility() = load(JsScripts.ACCESSIBILITY_AUDIT) { setAccessibility(it) }
+
+    private fun load(script: String, onResult: (String) -> Unit) {
+        viewModelScope.launch {
+            setLoading(true)
+            val raw = pageInteractor.evaluate(script, timeoutMs = 15_000)
+            if (raw == null) {
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    error = "The page didn't respond. Reload it and try again."
+                )
+                return@launch
+            }
+            onResult(raw)
+        }
+    }
+
+    /** Evaluates the console input against the page. */
+    fun runJsInput() {
+        val script = _uiState.value.jsInput.trim()
+        if (script.isEmpty()) return
+        viewModelScope.launch {
+            setLoading(true)
+            onConsoleMessage("log", "> $script", "console", 0)
+            val raw = pageInteractor.evaluate(JsScripts.consoleEval(script), timeoutMs = 15_000)
+            val output = raw ?: "No response from the page"
+            _uiState.value = _uiState.value.copy(
+                isLoading = false,
+                jsOutput = output,
+                jsInput = ""
+            )
+            onConsoleMessage("log", output.take(2000), "console", 0)
+        }
     }
 
     fun dismissError() {
