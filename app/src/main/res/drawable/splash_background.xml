@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@color/nova_background" />
+    <item
+        android:gravity="center"
+        android:width="120dp"
+        android:height="120dp">
+        <inset android:drawable="@drawable/ic_nova_logo" android:inset="0dp" />
+    </item>
+</layer-list>

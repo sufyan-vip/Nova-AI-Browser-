@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">NOVA</string>
+    <string name="app_full_name">NOVA AI Browser</string>
+    <string name="new_tab">New tab</string>
+    <string name="private_tab">New private tab</string>
+    <string name="search_or_type_url">Search or type URL</string>
+    <string name="ai_assistant">AI Assistant</string>
+    <string name="scan_qr">Scan QR</string>
+    <string name="downloads_channel_name">Downloads</string>
+    <string name="downloads_channel_desc">Progress and completion of file downloads</string>
+    <string name="ai_channel_name">AI tasks</string>
+    <string name="ai_channel_desc">AI and automation task results</string>
+    <string name="security_channel_name">Security alerts</string>
+    <string name="security_channel_desc">Privacy and security notifications</string>
+</resources>

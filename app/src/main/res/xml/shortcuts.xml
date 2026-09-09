@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:shortcutId="new_tab"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_tab"
+        android:shortcutShortLabel="@string/new_tab">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.nova.browser"
+            android:targetClass="com.nova.browser.MainActivity"
+            android:data="nova://new-tab" />
+    </shortcut>
+    <shortcut
+        android:shortcutId="private_tab"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_private"
+        android:shortcutShortLabel="@string/private_tab">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.nova.browser"
+            android:targetClass="com.nova.browser.MainActivity"
+            android:data="nova://private-tab" />
+    </shortcut>
+    <shortcut
+        android:shortcutId="ai_assistant"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_ai"
+        android:shortcutShortLabel="@string/ai_assistant">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.nova.browser"
+            android:targetClass="com.nova.browser.MainActivity"
+            android:data="nova://ai" />
+    </shortcut>
+</shortcuts>
