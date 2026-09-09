@@ -35,8 +35,15 @@ object UrlUtils {
             (Patterns.WEB_URL.matcher(text).matches() || host.count { it == '.' } >= 1)
     }
 
-    /** Turns raw omnibox input into a loadable URL (search query fallback). */
-    fun toUrlOrSearch(input: String, searchEngine: SearchEngines.Engine): String {
+    /**
+     * Turns raw omnibox input into a loadable URL (search query fallback).
+     * Callers that have access to user settings should pass the selected engine;
+     * background/agent callers safely fall back to Google.
+     */
+    fun toUrlOrSearch(
+        input: String,
+        searchEngine: SearchEngines.Engine = SearchEngines.byName("Google")
+    ): String {
         val text = input.trim()
         if (text.isEmpty()) return Constants.HOME_URL
         if (text.startsWith("nova://") || text.startsWith("about:") || text.startsWith("file://")) return text

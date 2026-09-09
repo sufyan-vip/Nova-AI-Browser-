@@ -343,7 +343,7 @@ fun SettingsScreen(
                 SwitchRow(
                     icon = Icons.Default.Search,
                     title = "Confirm before closing tabs",
-                    checked = settings.confirmCloseTabs,
+                    checked = settings.confirmBeforeClosingTabs,
                     onCheckedChange = viewModel::setConfirmCloseTabs
                 )
             }

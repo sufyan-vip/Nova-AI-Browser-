@@ -193,11 +193,13 @@ class ContextEngine @Inject constructor(
         val lead = paragraphs.take(leadCount)
         val rest = paragraphs.drop(leadCount)
 
-        val scored = rest.mapIndexed { index, paragraph ->
+        // Keep the types explicit here. This avoids overload ambiguity around
+        // sumOf/plus on older Kotlin compiler frontends used by Android CI.
+        val scored: List<Triple<Int, String, Int>> = rest.mapIndexed { index: Int, paragraph: String ->
             val lower = paragraph.lowercase()
-            val score = keywords.sumOf { keyword -> if (lower.contains(keyword)) 1 else 0 }
+            val score: Int = keywords.count { keyword: String -> lower.contains(keyword) }
             Triple(index, paragraph, score)
-        }.sortedByDescending { it.third }
+        }.sortedByDescending { triple: Triple<Int, String, Int> -> triple.third }
 
         val selected = sortedSetOf<Int>()
         var used = HtmlUtils.approximateTokens(lead.joinToString("\n\n"))
@@ -205,7 +207,7 @@ class ContextEngine @Inject constructor(
             if (score == 0) continue
             val cost = HtmlUtils.approximateTokens(paragraph)
             if (used + cost > maxTokens) continue
-            selected += index
+            selected.add(index)
             used += cost
         }
         // Backfill with sequential paragraphs if budget remains.
@@ -213,7 +215,7 @@ class ContextEngine @Inject constructor(
             if (index in selected) return@forEach
             val cost = HtmlUtils.approximateTokens(rest[index])
             if (used + cost <= maxTokens) {
-                selected += index
+                selected.add(index)
                 used += cost
             }
         }
